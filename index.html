@@ -74,6 +74,14 @@
   .section-body strong{color:var(--paper);font-weight:600;}
   .section-body a{color:var(--teal);text-decoration:underline;text-decoration-color:rgba(77,187,160,0.4);text-underline-offset:2px;}
   .section-body a:hover{text-decoration-color:var(--teal);}
+  .section-body table{width:100%;border-collapse:collapse;margin:6px 0 20px;font-size:14px;}
+  .section-body th{text-align:left;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;color:var(--slate);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--ink-3);}
+  .section-body th:first-child{border-radius:8px 0 0 0;}
+  .section-body th:last-child{border-radius:0 8px 0 0;}
+  .section-body td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--paper-dim);line-height:1.6;vertical-align:top;}
+  .section-body tr:last-child td{border-bottom:1px solid var(--line);}
+  .section-body td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--teal);white-space:nowrap;}
+  .section-body td strong, .section-body th strong{color:var(--paper);}
   .tag{font-family:'IBM Plex Mono',monospace;font-size:13px;background:var(--ink-3);color:var(--teal);padding:2px 7px;border-radius:4px;letter-spacing:0.2px;}
   .callout{background:var(--ink-2);border-left:2.5px solid var(--amber);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0;}
   .callout p{color:var(--paper);margin:0;font-size:14.5px;line-height:1.7;}
@@ -140,7 +148,7 @@
     num    -> only used for type "issue", e.g. "01"
     body   -> HTML content for the page body
 */
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRA1BQRI8MpKlWeUPTsm5d4IflKFKZPia2KH-wsI1gvt1PSe62TUWFMXqstJC0a-Q2WA_NWR3oQANjV/pub?gid=318963113&single=true&output=csv";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRA1BQRI8MpKlWeUPTsm5d4IflKFKZPia2KH-wsI1gvt1PSe62TUWFMXqstJC0a-Q2WA_NWR3oQANjV/pub?gid=455446186&single=true&output=csv";
 
 let DATA = {};
 let currentTrack = "support";
