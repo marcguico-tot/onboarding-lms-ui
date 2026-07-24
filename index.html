@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token of Trust — Onboarding Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --ink:#141A21; --ink-2:#1B222B; --ink-3:#232B36; --line:#2C3542;
+    --paper:#EDE7D9; --paper-dim:#C9C2AF;
+    --teal:#3FA98C; --teal-dim:#1F5E4E;
+    --amber:#D6A24E; --slate:#8A93A3; --slate-dim:#5B6270; --danger:#C96A5A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  .app{display:flex;min-height:100vh;}
+  ::selection{background:var(--teal-dim);color:var(--paper);}
+  .sidebar{width:280px;flex-shrink:0;background:var(--ink-2);border-right:1px solid var(--line);padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .stamp{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stamp svg{width:14px;height:14px;}
+  .brand-text{font-family:'Fraunces',serif;font-size:15px;font-weight:600;letter-spacing:0.2px;color:var(--paper);}
+  .brand-sub{font-size:10.5px;color:var(--slate);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
+  .sync-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:8px 10px;background:var(--ink-3);border-radius:7px;border:1px solid var(--line);}
+  .sync-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate);}
+  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0;}
+  .sync-dot.err{background:var(--danger);}
+  .sync-dot.loading{background:var(--amber);animation:pulse 1s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .refresh-btn{background:transparent;border:none;color:var(--slate);cursor:pointer;padding:2px;display:flex;}
+  .refresh-btn:hover{color:var(--paper);}
+  .refresh-btn svg{width:13px;height:13px;}
+  .refresh-btn.spinning svg{animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .tracks{display:flex;gap:6px;margin-bottom:22px;background:var(--ink-3);padding:4px;border-radius:8px;}
+  .track-btn{flex:1;background:transparent;border:none;color:var(--slate);font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:8px 6px;border-radius:6px;cursor:pointer;transition:all .15s ease;}
+  .track-btn.active{background:var(--teal-dim);color:var(--paper);}
+  .search-wrap{position:relative;margin-bottom:22px;}
+  .search-wrap input{width:100%;background:var(--ink-3);border:1px solid var(--line);color:var(--paper);font-family:'Inter',sans-serif;font-size:13px;padding:9px 12px 9px 32px;border-radius:8px;outline:none;}
+  .search-wrap input::placeholder{color:var(--slate-dim);}
+  .search-wrap input:focus{border-color:var(--teal-dim);}
+  .search-icon{position:absolute;left:11px;top:9px;width:14px;height:14px;color:var(--slate);}
+  .nav-group{margin-bottom:18px;}
+  .nav-label{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--slate-dim);margin-bottom:8px;padding-left:2px;}
+  .nav-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--paper-dim);margin-bottom:2px;transition:background .12s ease;}
+  .nav-item:hover{background:var(--ink-3);}
+  .nav-item.active{background:var(--ink-3);color:var(--paper);}
+  .nav-item.active .dot{background:var(--teal);}
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--line);flex-shrink:0;}
+  .nav-check{width:13px;height:13px;color:var(--teal);flex-shrink:0;}
+  .progress-box{margin-top:8px;padding:12px;background:var(--ink-3);border-radius:8px;border:1px solid var(--line);}
+  .progress-label{font-size:11px;color:var(--slate);margin-bottom:6px;}
+  .progress-track{height:5px;background:var(--ink);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--teal);border-radius:3px;transition:width .3s ease;}
+  .progress-count{font-size:11px;color:var(--paper-dim);margin-top:6px;font-family:'IBM Plex Mono',monospace;}
+  .main{flex:1;padding:48px 56px;max-width:840px;}
+  .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-weight:500;margin-bottom:10px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;color:var(--paper);margin:0 0 12px;line-height:1.15;}
+  .mark-btn{display:inline-flex;align-items:center;gap:7px;margin-top:18px;background:transparent;border:1px solid var(--line);color:var(--paper-dim);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:20px;cursor:pointer;transition:all .15s ease;}
+  .mark-btn:hover{border-color:var(--teal-dim);color:var(--paper);}
+  .mark-btn.done{background:var(--teal-dim);border-color:var(--teal-dim);color:var(--paper);}
+  .mark-btn svg{width:13px;height:13px;}
+  .section-body{margin-top:28px;}
+  .section-body h2{font-family:'Fraunces',serif;font-weight:500;font-size:18px;color:var(--paper);margin:26px 0 10px;}
+  .section-body h2:first-child{margin-top:0;}
+  .section-body p{font-size:14.5px;line-height:1.75;color:var(--paper-dim);margin:0 0 12px;}
+  .section-body ul,.section-body ol{margin:0 0 14px;padding-left:20px;}
+  .section-body li{font-size:14.5px;line-height:1.7;color:var(--paper-dim);margin-bottom:6px;}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--ink-3);color:var(--teal);padding:1.5px 6px;border-radius:4px;}
+  .callout{background:var(--ink-2);border-left:2px solid var(--amber);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0;}
+  .callout p{color:var(--paper);margin:0;font-size:13.5px;}
+  .callout .callout-label{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--amber);font-weight:500;margin-bottom:5px;display:block;}
+  .issue-card{background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:14px;}
+  .issue-num{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal);background:rgba(63,169,140,0.12);padding:2px 8px;border-radius:5px;margin-bottom:10px;}
+  .empty-state{padding:60px 0;text-align:center;color:var(--slate);}
+  .empty-state svg{width:32px;height:32px;margin-bottom:10px;opacity:0.5;}
+  .banner{background:var(--ink-2);border:1px solid var(--danger);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--paper-dim);}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  @media (max-width:760px){.app{flex-direction:column;}.sidebar{width:100%;height:auto;position:relative;}.main{padding:32px 20px;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="stamp"><svg viewBox="0 0 24 24" fill="none" stroke="#3FA98C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div><div class="brand-text">Onboarding Ledger</div><div class="brand-sub">Token of Trust</div></div>
+    </div>
+
+    <div class="sync-row">
+      <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Not connected</span></div>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadContent(true)" aria-label="Refresh content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+
+    <div class="tracks">
+      <button class="track-btn active" data-track="support" onclick="setTrack('support')">Technical Support</button>
+      <button class="track-btn" data-track="marketing" onclick="setTrack('marketing')">Marketing</button>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#8A93A3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search glossary and issues..." oninput="onSearch(this.value)">
+    </div>
+
+    <div id="navContainer"></div>
+
+    <div class="progress-box">
+      <div class="progress-label">Sections reviewed</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-count" id="progressCount">0 / 0</div>
+    </div>
+  </div>
+
+  <div class="main" id="mainContent"></div>
+</div>
+
+<script>
+/*
+  CONFIG
+  Paste the published-CSV URL for your onboarding content sheet here.
+  In Google Sheets: File > Share > Publish to web > select the sheet tab > CSV > Publish, then copy the link.
+  Expected columns (first row = header): track, group, id, title, type, num, body
+    track  -> "support" or "marketing" (or any other track key you add)
+    group  -> sidebar group label, e.g. "Internal glossary"
+    id     -> unique slug, e.g. "epic"
+    title  -> shown in nav + page heading
+    type   -> "page", "glossary", or "issue"
+    num    -> only used for type "issue", e.g. "01"
+    body   -> HTML content for the page body
+*/
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRA1BQRI8MpKlWeUPTsm5d4IflKFKZPia2KH-wsI1gvt1PSe62TUWFMXqstJC0a-Q2WA_NWR3oQANjV/pub?gid=1279443988&single=true&output=csv";
+
+let DATA = {};
+let currentTrack = "support";
+let currentItemId = null;
+let completed = {};
+let searchTerm = "";
+let lastSynced = null;
+
+const FALLBACK_DATA = {
+  support: { label: "Technical Support", groups: [
+    { label: "Setup needed", items: [
+      { id:"setup", title:"Connect your content sheet", type:"page", body: `
+        <p>This portal is not yet connected to a live content source. Once connected, edits made in your Google Sheet will show up here automatically.</p>
+        <h2>To connect it</h2>
+        <ol style="padding-left:20px;">
+          <li>Create a Google Sheet with columns: <span class="tag">track</span>, <span class="tag">group</span>, <span class="tag">id</span>, <span class="tag">title</span>, <span class="tag">type</span>, <span class="tag">num</span>, <span class="tag">body</span></li>
+          <li>Add one row per onboarding topic, glossary term, or issue.</li>
+          <li>Go to File > Share > Publish to web, choose the sheet tab, select CSV, and click Publish.</li>
+          <li>Copy the published link and paste it into <span class="tag">SHEET_CSV_URL</span> near the top of the script in this file.</li>
+        </ol>
+        <div class="callout"><span class="callout-label">Note</span><p>Once connected, this page fetches your sheet fresh each time it loads, and you can also hit the refresh icon in the sidebar any time.</p></div>
+      `}
+    ]}
+  ]},
+  marketing: { label: "Marketing Coordinator", groups: [
+    { label: "Setup needed", items: [
+      { id:"setup-m", title:"Connect your content sheet", type:"page", body: `<p>Same content sheet can hold both tracks — just set the <span class="tag">track</span> column to <span class="tag">marketing</span> for those rows.</p>` }
+    ]}
+  ]}
+};
+
+function iconFor(type){ return ''; }
+
+function allItems(){
+  const track = DATA[currentTrack];
+  if(!track) return [];
+  let items = [];
+  track.groups.forEach(g => g.items.forEach(it => items.push(it)));
+  return items;
+}
+
+function trackKey(id){ return currentTrack + ':' + id; }
+
+function renderNav(){
+  const track = DATA[currentTrack];
+  const container = document.getElementById('navContainer');
+  container.innerHTML = '';
+  if(!track){ return; }
+  const term = searchTerm.trim().toLowerCase();
+
+  track.groups.forEach(group => {
+    const filteredItems = group.items.filter(it => {
+      if(!term) return true;
+      return it.title.toLowerCase().includes(term) || (it.body || '').toLowerCase().includes(term);
+    });
+    if(filteredItems.length === 0) return;
+
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'nav-group';
+    const label = document.createElement('div');
+    label.className = 'nav-label';
+    label.textContent = group.label;
+    groupDiv.appendChild(label);
+
+    filteredItems.forEach(item => {
+      const navItem = document.createElement('div');
+      navItem.className = 'nav-item' + (item.id === currentItemId ? ' active' : '');
+      const isDone = completed[trackKey(item.id)];
+      navItem.innerHTML = `<span>${item.title}</span>` + (isDone
+        ? `<svg class="nav-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+        : `<span class="dot"></span>`);
+      navItem.onclick = () => selectItem(item.id);
+      groupDiv.appendChild(navItem);
+    });
+    container.appendChild(groupDiv);
+  });
+
+  if(term && container.innerHTML === ''){
+    container.innerHTML = `<div style="padding:20px 4px;color:var(--slate-dim);font-size:12.5px;">No matches for "${searchTerm}"</div>`;
+  }
+  updateProgress();
+}
+
+function updateProgress(){
+  const items = allItems();
+  const total = items.length;
+  const done = items.filter(it => completed[trackKey(it.id)]).length;
+  document.getElementById('progressFill').style.width = total ? Math.round((done/total)*100) + '%' : '0%';
+  document.getElementById('progressCount').textContent = done + ' / ' + total;
+}
+
+function setTrack(track){
+  currentTrack = track;
+  document.querySelectorAll('.track-btn').forEach(b => b.classList.toggle('active', b.dataset.track === track));
+  const items = allItems();
+  currentItemId = items.length ? items[0].id : null;
+  renderNav();
+  renderMain();
+}
+
+function onSearch(val){ searchTerm = val; renderNav(); }
+
+async function toggleComplete(id){
+  const key = trackKey(id);
+  completed[key] = !completed[key];
+  try{ await window.storage.set('onboarding-progress', JSON.stringify(completed), false); }catch(e){}
+  renderNav();
+  renderMain();
+}
+
+function selectItem(id){ currentItemId = id; renderNav(); renderMain(); }
+
+function findItem(id){
+  const track = DATA[currentTrack];
+  if(!track) return null;
+  for(const g of track.groups){ for(const it of g.items){ if(it.id === id) return it; } }
+  return null;
+}
+
+function renderMain(){
+  const main = document.getElementById('mainContent');
+  const item = findItem(currentItemId);
+  if(!item){
+    main.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><div>Select a topic from the sidebar</div></div>`;
+    return;
+  }
+  const isDone = completed[trackKey(item.id)];
+  const eyebrowText = item.type === 'glossary' ? 'Internal glossary' : item.type === 'issue' ? 'Common issue #' + (item.num || '') : (DATA[currentTrack] ? DATA[currentTrack].label : '');
+
+  let bodyHtml;
+  if(item.type === 'issue'){
+    bodyHtml = `<div class="issue-card">${item.num ? `<span class="issue-num">#${item.num}</span>` : ''}${item.body}</div>`;
+  } else {
+    bodyHtml = item.body;
+  }
+
+  main.innerHTML = `
+    <div class="eyebrow">${eyebrowText}</div>
+    <h1>${item.title}</h1>
+    <button class="mark-btn ${isDone ? 'done' : ''}" onclick="toggleComplete('${item.id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      ${isDone ? 'Marked reviewed' : 'Mark as reviewed'}
+    </button>
+    <div class="section-body">${bodyHtml}</div>
+  `;
+}
+
+function setSyncStatus(state, label){
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  const btn = document.getElementById('refreshBtn');
+  dot.className = 'sync-dot' + (state === 'error' ? ' err' : state === 'loading' ? ' loading' : '');
+  text.textContent = label;
+  btn.classList.toggle('spinning', state === 'loading');
+}
+
+function buildDataFromRows(rows){
+  const built = {};
+  rows.forEach(row => {
+    const track = (row.track || '').trim();
+    const group = (row.group || 'General').trim();
+    if(!track || !row.id || !row.title) return;
+    if(!built[track]) built[track] = { label: track.charAt(0).toUpperCase() + track.slice(1), groups: [] };
+    let groupObj = built[track].groups.find(g => g.label === group);
+    if(!groupObj){ groupObj = { label: group, items: [] }; built[track].groups.push(groupObj); }
+    groupObj.items.push({
+      id: row.id.trim(),
+      title: row.title.trim(),
+      type: (row.type || 'page').trim(),
+      num: (row.num || '').trim(),
+      body: row.body || ''
+    });
+  });
+  return built;
+}
+
+async function loadContent(manual){
+  if(!SHEET_CSV_URL){
+    DATA = FALLBACK_DATA;
+    setSyncStatus('error', 'Not connected');
+    const items = allItems();
+    currentItemId = items.length ? items[0].id : null;
+    renderNav();
+    renderMain();
+    return;
+  }
+  setSyncStatus('loading', manual ? 'Refreshing...' : 'Loading...');
+  try{
+    const res = await fetch(SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
+    if(!res.ok) throw new Error('Fetch failed: ' + res.status);
+    const csvText = await res.text();
+    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+    const built = buildDataFromRows(parsed.data);
+    if(Object.keys(built).length === 0) throw new Error('No rows parsed');
+    DATA = built;
+    lastSynced = new Date();
+    setSyncStatus('ok', 'Synced ' + lastSynced.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+  }catch(e){
+    if(Object.keys(DATA).length === 0) DATA = FALLBACK_DATA;
+    setSyncStatus('error', 'Sync failed — showing cached');
+  }
+  if(!DATA[currentTrack]){ currentTrack = Object.keys(DATA)[0] || 'support'; }
+  const items = allItems();
+  if(!currentItemId || !findItem(currentItemId)){
+    currentItemId = items.length ? items[0].id : null;
+  }
+  renderNav();
+  renderMain();
+}
+
+async function init(){
+  try{
+    const result = await window.storage.get('onboarding-progress', false);
+    if(result && result.value) completed = JSON.parse(result.value);
+  }catch(e){}
+  await loadContent(false);
+}
+
+init();
+</script>
+</body>
+</html>
