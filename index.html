@@ -308,17 +308,17 @@ function setSyncStatus(state, label){
 function buildDataFromRows(rows){
   const built = {};
   rows.forEach(row => {
-    const track = (row.track || '').trim();
-    const group = (row.group || 'General').trim();
+    const track = String(row.track || '').trim();
+    const group = String(row.group || 'General').trim();
     if(!track || !row.id || !row.title) return;
     if(!built[track]) built[track] = { label: track.charAt(0).toUpperCase() + track.slice(1), groups: [] };
     let groupObj = built[track].groups.find(g => g.label === group);
     if(!groupObj){ groupObj = { label: group, items: [] }; built[track].groups.push(groupObj); }
     groupObj.items.push({
-      id: row.id.trim(),
-      title: row.title.trim(),
-      type: (row.type || 'page').trim(),
-      num: (row.num || '').trim(),
+      id: String(row.id).trim(),
+      title: String(row.title).trim(),
+      type: String(row.type || 'page').trim(),
+      num: String(row.num || '').trim(),
       body: row.body || ''
     });
   });
@@ -349,7 +349,7 @@ async function loadContent(manual){
       settled = true;
       cleanup(script);
       resolve(null);
-    }, 10000);
+    }, 25000);
 
     window[callbackName] = (data) => {
       if(settled) return;
@@ -379,6 +379,7 @@ async function loadContent(manual){
     lastSynced = new Date();
     setSyncStatus('ok', 'Synced ' + lastSynced.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
   }catch(e){
+    console.error('Onboarding portal sync error:', e);
     if(Object.keys(DATA).length === 0) DATA = FALLBACK_DATA;
     setSyncStatus('error', 'Sync failed — showing cached');
   }
