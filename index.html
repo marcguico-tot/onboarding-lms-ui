@@ -6,7 +6,6 @@
 <title>Token of Trust — Onboarding Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
     --ink:#141A21; --ink-2:#1B222B; --ink-3:#232B36; --line:#323C49;
@@ -137,8 +136,9 @@
 <script>
 /*
   CONFIG
-  Paste the published-CSV URL for your onboarding content sheet here.
-  In Google Sheets: File > Share > Publish to web > select the sheet tab > CSV > Publish, then copy the link.
+  This points at a Google Apps Script Web App deployment bound to your content sheet.
+  It returns live JSON on every request, and this URL stays stable even as the sheet's
+  content changes (only a brand-new deployment, not a new version of this one, would change it).
   Expected columns (first row = header): track, group, id, title, type, num, body
     track  -> "support" or "marketing" (or any other track key you add)
     group  -> sidebar group label, e.g. "Internal glossary"
@@ -148,7 +148,7 @@
     num    -> only used for type "issue", e.g. "01"
     body   -> HTML content for the page body
 */
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRA1BQRI8MpKlWeUPTsm5d4IflKFKZPia2KH-wsI1gvt1PSe62TUWFMXqstJC0a-Q2WA_NWR3oQANjV/pub?gid=65186767&single=true&output=csv";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzrOGhOUv1LReX-S_NGaX-qVGx00yqGKuQ0lFX1qOBw5JEqzf55QC-lUFcJwYPliB--/exec";
 
 let DATA = {};
 let currentTrack = "support";
@@ -326,7 +326,7 @@ function buildDataFromRows(rows){
 }
 
 async function loadContent(manual){
-  if(!SHEET_CSV_URL){
+  if(!APPS_SCRIPT_URL){
     DATA = FALLBACK_DATA;
     setSyncStatus('error', 'Not connected');
     const items = allItems();
@@ -337,11 +337,10 @@ async function loadContent(manual){
   }
   setSyncStatus('loading', manual ? 'Refreshing...' : 'Loading...');
   try{
-    const res = await fetch(SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
+    const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
     if(!res.ok) throw new Error('Fetch failed: ' + res.status);
-    const csvText = await res.text();
-    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-    const built = buildDataFromRows(parsed.data);
+    const rows = await res.json();
+    const built = buildDataFromRows(rows);
     if(Object.keys(built).length === 0) throw new Error('No rows parsed');
     DATA = built;
     lastSynced = new Date();
