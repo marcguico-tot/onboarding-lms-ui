@@ -336,10 +336,43 @@ async function loadContent(manual){
     return;
   }
   setSyncStatus('loading', manual ? 'Refreshing...' : 'Loading...');
+
+  const rows = await new Promise((resolve) => {
+    const callbackName = 'totOnboardingCallback_' + Date.now();
+    let settled = false;
+    const cleanup = (script) => {
+      delete window[callbackName];
+      if(script && script.parentNode) script.parentNode.removeChild(script);
+    };
+    const timeout = setTimeout(() => {
+      if(settled) return;
+      settled = true;
+      cleanup(script);
+      resolve(null);
+    }, 10000);
+
+    window[callbackName] = (data) => {
+      if(settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      cleanup(script);
+      resolve(data);
+    };
+
+    const script = document.createElement('script');
+    script.src = APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'callback=' + callbackName + '&cachebust=' + Date.now();
+    script.onerror = () => {
+      if(settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      cleanup(script);
+      resolve(null);
+    };
+    document.body.appendChild(script);
+  });
+
   try{
-    const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
-    if(!res.ok) throw new Error('Fetch failed: ' + res.status);
-    const rows = await res.json();
+    if(!rows) throw new Error('No data received');
     const built = buildDataFromRows(rows);
     if(Object.keys(built).length === 0) throw new Error('No rows parsed');
     DATA = built;
