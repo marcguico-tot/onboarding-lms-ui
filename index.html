@@ -166,8 +166,8 @@ const FALLBACK_DATA = {
         <ol style="padding-left:20px;">
           <li>Create a Google Sheet with columns: <span class="tag">track</span>, <span class="tag">group</span>, <span class="tag">id</span>, <span class="tag">title</span>, <span class="tag">type</span>, <span class="tag">num</span>, <span class="tag">body</span></li>
           <li>Add one row per onboarding topic, glossary term, or issue.</li>
-          <li>Go to File > Share > Publish to web, choose the sheet tab, select CSV, and click Publish.</li>
-          <li>Copy the published link and paste it into <span class="tag">SHEET_CSV_URL</span> near the top of the script in this file.</li>
+          <li>In the sheet, go to Extensions > Apps Script, add a doGet() function that returns the sheet as JSON, and deploy it as a Web App (access: Anyone).</li>
+          <li>Copy the deployment's /exec URL and paste it into <span class="tag">APPS_SCRIPT_URL</span> near the top of the script in this file.</li>
         </ol>
         <div class="callout"><span class="callout-label">Note</span><p>Once connected, this page fetches your sheet fresh each time it loads, and you can also hit the refresh icon in the sidebar any time.</p></div>
       `}
